@@ -53,6 +53,8 @@
          padding:14px 18px;margin-bottom:18px}
   .brand{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--lime);
          text-shadow:0 0 16px rgba(200,255,46,.6);white-space:nowrap}
+  .brand{text-decoration:none;transition:.16s}
+  .brand:hover{filter:brightness(1.25)}
   .brand span{color:var(--dim);text-shadow:none}
   .hstat{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.12em;
          text-transform:uppercase;color:#9fb0c6}
@@ -166,7 +168,7 @@
 <div class="wrap">
 
   <header class="panel">
-    <div class="brand">CHROME LAB <span>// OPS</span></div>
+    <a class="brand" href="/" title="back to the hero">CHROME LAB <span>// OPS</span></a>
     <div class="hstat"><span class="dot" id="hdot"></span><span id="hst">CONNECTING</span></div>
     <div class="sp"></div>
     <div class="tick">next refresh <b id="cd">—</b></div>

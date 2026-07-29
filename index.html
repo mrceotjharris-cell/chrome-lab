@@ -59,6 +59,18 @@
 
   #mark{position:fixed;bottom:20px;left:20px;z-index:10;font-size:9px;letter-spacing:.24em;
         text-transform:uppercase;color:#41506490}
+  #ops{position:fixed;top:20px;right:20px;z-index:20;font-size:9.5px;letter-spacing:.26em;
+       text-transform:uppercase;text-decoration:none;color:var(--lime);
+       padding:10px 16px;border:1px solid rgba(200,255,46,.32);border-radius:10px;
+       background:rgba(11,15,26,.5);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+       transition:.18s;display:flex;align-items:center;gap:9px}
+  #ops:hover{background:rgba(200,255,46,.14);border-color:var(--lime);
+             box-shadow:0 0 24px rgba(200,255,46,.3)}
+  #ops .d{width:6px;height:6px;border-radius:50%;background:var(--lime);
+          box-shadow:0 0 8px var(--lime);animation:pulse 1.7s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+  @media(prefers-reduced-motion:reduce){#ops .d{animation:none}}
+  @media(max-width:700px){#ops{top:14px;right:14px;padding:9px 13px;font-size:8.5px}}
   @media(max-width:700px){ #meta{display:none} #mark{left:50%;transform:translateX(-50%)} }
   @media(prefers-reduced-motion:reduce){ .dot{animation:none} }
 </style>
@@ -79,6 +91,7 @@
   <div class="kv"><span>api cost</span><span><b>$0.00</b></span></div>
 </div>
 
+<a id="ops" href="/dashboard.html"><span class="d"></span>n8n ops</a>
 <div id="mark">built with three.js</div>
 
 <script>
