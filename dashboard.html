@@ -116,6 +116,35 @@
 
   .empty{padding:26px 16px;text-align:center;color:#4d5c72;font-size:11px;line-height:1.9}
 
+  /* ---------- blocks ---------- */
+  #blocks{margin-bottom:16px}
+  .blk{display:flex;gap:11px;padding:11px 13px;border-radius:10px;margin-bottom:7px;
+       background:rgba(255,255,255,.026);border:1px solid rgba(255,255,255,.07);
+       border-left-width:2px;align-items:flex-start}
+  .blk.sev3{border-left-color:var(--red)}
+  .blk.sev2{border-left-color:var(--amber)}
+  .blk.sev1{border-left-color:var(--cyan)}
+  .blk.mine{border-left-color:var(--lime)}
+  .blk .bd{flex:1;min-width:0}
+  .blk .bt{font-size:11.5px;color:#dbe6f4;margin-bottom:3px}
+  .blk .bt b{color:#fff;font-weight:600}
+  .blk .bs{font-size:10px;color:#6f8098;line-height:1.6}
+  .blk .bs em{font-style:normal;color:var(--lime)}
+  .blk .age{font-size:9px;color:#4d5c72;white-space:nowrap;padding-top:2px}
+  .blk .x{background:none;border:0;color:#4d5c72;font-size:15px;line-height:1;padding:0 3px;
+          cursor:pointer;transition:.15s}
+  .blk .x:hover{color:var(--red);background:none;border:0}
+  .bkclear{padding:16px 14px;text-align:center;color:#4d5c72;font-size:11px;line-height:1.8}
+  .bkclear b{color:var(--lime);font-weight:500}
+  .bkadd{display:flex;gap:8px;margin-top:11px}
+  .bkadd input{flex:1;font:inherit;font-size:11.5px;color:var(--txt);background:rgba(0,0,0,.3);
+    border:1px solid rgba(255,255,255,.1);border-radius:9px;padding:9px 12px;outline:none}
+  .bkadd input:focus{border-color:rgba(200,255,46,.45)}
+  .bkadd button{padding:9px 16px;border-color:rgba(200,255,46,.3);color:var(--lime)}
+  .bkadd button:hover{background:rgba(200,255,46,.12);border-color:var(--lime)}
+  .bkhd{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:#4d5c72;margin:15px 0 8px}
+  .bkhd.first{margin-top:0}
+
   /* ---------- setup / error ---------- */
   .alert{padding:20px 22px;margin-bottom:18px;border-radius:14px;
     border:1px solid rgba(255,95,109,.35);background:rgba(255,95,109,.07)}
@@ -183,6 +212,18 @@
     <div class="tile panel"><div class="k">runs · 24h</div><div class="v" id="t3">—</div><div class="s" id="t3s">&nbsp;</div></div>
     <div class="tile panel"><div class="k">success rate</div><div class="v" id="t4">—</div><div class="s" id="t4s">&nbsp;</div></div>
   </div>
+
+  <section class="sec panel" id="blocks">
+    <div class="sech">
+      <h2>Blocks</h2><div class="sp"></div><div class="n" id="bkn"></div>
+    </div>
+    <div id="bkauto"></div>
+    <div id="bkmine"></div>
+    <div class="bkadd">
+      <input id="bkin" maxlength="160" placeholder="name something that's stuck…" autocomplete="off" />
+      <button id="bkbtn">add</button>
+    </div>
+  </section>
 
   <div class="cols">
     <section class="sec panel">
@@ -286,11 +327,12 @@ function render(){
     $('wf').innerHTML = '<div class="empty">no data</div>';
     $('ex').innerHTML = '<div class="empty">no data</div>';
     ['t1','t2','t3','t4'].forEach(i => $(i).textContent = '—');
+    renderBlocks();
     return;
   }
   $('hdot').className = 'dot on';
   $('hst').textContent = 'LIVE';
-  renderTiles(); renderWF(); renderEX();
+  renderTiles(); renderWF(); renderEX(); renderBlocks();
 }
 
 function renderAlert(){
@@ -403,6 +445,95 @@ function renderEX(){
     </div>`;
   }).join('');
 }
+
+/* ══════════ blocks ══════════
+   Two sources. DETECTED blocks are derived from the live n8n state — the
+   dashboard already knows enough to spot them. MINE are the ones only you
+   know about, kept in this browser's localStorage (no backend, no sync).
+   Every detected block carries one concrete next action. Smaller, not vaguer.
+   ═══════════════════════════════════════ */
+const BKEY = 'chromelab.blocks.v1';
+
+function loadMine(){
+  try { return JSON.parse(localStorage.getItem(BKEY) || '[]'); }
+  catch { return []; }                      // private mode / storage disabled
+}
+function saveMine(v){
+  try { localStorage.setItem(BKEY, JSON.stringify(v)); } catch {}
+}
+
+function detectBlocks(){
+  const out = [];
+  for(const w of live()){
+    const runs  = runsOf(w.id);
+    const fails = runs.filter(r => isFail(r.status));
+    const name  = esc(w.name);
+
+    if(fails.length){
+      out.push({ sev:3, t:`<b>${name}</b> is failing`,
+        s:`${fails.length} of ${runs.length} runs errored. <em>Open the newest failed execution in n8n and read which node threw.</em>` });
+    }
+    if(w.nodeCount === 0){
+      out.push({ sev:1, t:`<b>${name}</b> is an empty shell`,
+        s:`No nodes at all. <em>Either build it or archive it — an empty workflow in the list is just noise.</em>` });
+      continue;
+    }
+    if(w.missingCreds && w.missingCreds.length){
+      out.push({ sev:2, t:`<b>${name}</b> has ${w.missingCreds.length} node${w.missingCreds.length===1?'':'s'} with no credential`,
+        s:`${w.missingCreds.map(esc).join(', ')}. <em>It will fail at the first of these. Attach the credentials before activating.</em>` });
+    }
+    // a credential gap explains the silence — don't also nag about never running
+    const credBlocked = w.missingCreds && w.missingCreds.length;
+    if(!w.active && runs.length && !fails.length){
+      out.push({ sev:3, t:`<b>${name}</b> works and is switched off`,
+        s:`${runs.length} run${runs.length===1?'':'s'}, all passed, and it has never run on its own. <em>Open it in n8n and flip Active. That is the whole job.</em>` });
+    } else if(!w.active && !runs.length && !credBlocked){
+      out.push({ sev:1, t:`<b>${name}</b> has never run`,
+        s:`${w.nodeCount} nodes built, zero executions. <em>Run it once manually to see whether it actually works.</em>` });
+    }
+  }
+  return out.sort((a,b) => b.sev - a.sev);
+}
+
+function renderBlocks(){
+  const auto = failed ? [] : detectBlocks();
+  const mine = loadMine();
+  const total = auto.length + mine.length;
+  $('bkn').textContent = total ? `${total} open` : 'clear';
+
+  $('bkauto').innerHTML = auto.length
+    ? '<div class="bkhd first">detected from your n8n</div>' + auto.map(b =>
+        `<div class="blk sev${b.sev}"><div class="bd">
+           <div class="bt">${b.t}</div><div class="bs">${b.s}</div>
+         </div></div>`).join('')
+    : (failed ? '' : '<div class="bkclear">Nothing detected. Every workflow is active, credentialled and passing.</div>');
+
+  $('bkmine').innerHTML = mine.length
+    ? '<div class="bkhd">named by you</div>' + mine.map(b =>
+        `<div class="blk mine"><div class="bd"><div class="bt">${esc(b.text)}</div></div>
+         <span class="age">${ago(b.added)}</span>
+         <button class="x" data-id="${b.id}" title="clear this">×</button></div>`).join('')
+    : '';
+}
+
+function addBlock(){
+  const t = $('bkin').value.trim();
+  if(!t) return;
+  const mine = loadMine();
+  mine.unshift({ id: String(Date.now()) + Math.random().toString(36).slice(2,6),
+                 text: t, added: new Date().toISOString() });
+  saveMine(mine);
+  $('bkin').value = '';
+  renderBlocks();
+}
+$('bkbtn').onclick = addBlock;
+$('bkin').addEventListener('keydown', e => { if(e.key === 'Enter') addBlock(); });
+$('bkmine').addEventListener('click', e => {
+  const b = e.target.closest('button.x');
+  if(!b) return;
+  saveMine(loadMine().filter(x => x.id !== b.dataset.id));
+  renderBlocks();
+});
 
 /* ══════════ local query engine ══════════
    Answers from the data already on the page. No AI call, no key, no cost.

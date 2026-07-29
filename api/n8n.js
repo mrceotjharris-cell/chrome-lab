@@ -22,6 +22,37 @@ const DEFAULT_BASE = 'https://goldentune.app.n8n.cloud';
 // Nodes that are documentation, not logic — excluded from the node count.
 const NON_LOGIC = new Set(['n8n-nodes-base.stickyNote']);
 
+// Node types that cannot run without a credential attached. n8n's API does not
+// tell you "this node is unconfigured", so we infer it: a node of one of these
+// types with no credentials block — or with one whose id is null — will fail.
+const NEEDS_CRED = new Set([
+  'n8n-nodes-base.wordpress', 'n8n-nodes-base.slack', 'n8n-nodes-base.linkedIn',
+  'n8n-nodes-base.telegram', 'n8n-nodes-base.medium', 'n8n-nodes-base.twitter',
+  'n8n-nodes-base.facebookGraphApi', 'n8n-nodes-base.googleBusinessProfile',
+  'n8n-nodes-base.gmail', 'n8n-nodes-base.googleSheets', 'n8n-nodes-base.airtable',
+  'n8n-nodes-base.notion', 'n8n-nodes-base.discord',
+  '@n8n/n8n-nodes-langchain.lmChatAnthropic', '@n8n/n8n-nodes-langchain.lmChatOpenAi',
+  '@n8n/n8n-nodes-langchain.googleGemini', '@n8n/n8n-nodes-langchain.openAi'
+]);
+
+/** Names of nodes that need a credential and don't have a usable one. */
+function missingCredentials(nodes) {
+  if (!Array.isArray(nodes)) return [];
+  const out = [];
+  for (const n of nodes) {
+    if (!n || typeof n.type !== 'string') continue;
+    const authed = n.parameters && n.parameters.authentication
+      && n.parameters.authentication !== 'none';
+    if (!NEEDS_CRED.has(n.type) && !(/httpRequest$/.test(n.type) && authed)) continue;
+
+    const creds = n.credentials;
+    const usable = creds && typeof creds === 'object' &&
+      Object.values(creds).some(c => c && c.id);   // id:null = placeholder, not configured
+    if (!usable) out.push(n.name || n.type.split('.').pop());
+  }
+  return out;
+}
+
 /** First sticky note's text, used as a description (n8n has no description field). */
 function stickyDescription(nodes) {
   if (!Array.isArray(nodes)) return null;
@@ -72,6 +103,7 @@ function slimWorkflow(w) {
     nodeCount: nodes.filter(n => n && !NON_LOGIC.has(n.type)).length,
     trigger: triggerSummary(nodes),
     description: stickyDescription(nodes),
+    missingCreds: missingCredentials(nodes),
     triggerCount: w.triggerCount || 0,
     createdAt: w.createdAt,
     updatedAt: w.updatedAt
