@@ -1,9 +1,25 @@
 # GOLDENTUNE.AI
 
-Procedural 3D hero — a morphing wireframe blob rendered live in the browser —
-plus a private ops dashboard for the n8n instance behind it.
+Goldentune.ai is the company. **Iyelle** is the model — a bot that optimizes your
+traffic engines and names the one that's stuck.
+
+The hero renders Iyelle: a morphing wireframe blob, procedural, live in the browser.
+It is not decoration, it is the subject. Behind it sits a private ops dashboard for
+the n8n instance the engines actually run on.
 
 No image assets, no 3D model files, no build step.
+
+## Naming
+
+| in the UI | in the code |
+|---|---|
+| traffic engine | `workflow` — n8n's own noun |
+| Iyelle | the Ask panel, and the mesh on the hero |
+
+**"Workflow" is upstream vocabulary, not ours.** It stays in the API contract —
+`grab('workflows')`, `workflowId`, the `/api/v1/workflows` path — because that is
+what n8n calls the resource and renaming it would break the proxy. Everywhere a
+person reads it, it is a traffic engine. Don't let the two leak into each other.
 
 ## What's in here
 
@@ -71,7 +87,7 @@ To change the headline, search for `goldentune` in the `<h1>`.
 
 ## How it works
 
-The blob is an icosahedron subdivided 26 times (14,580 triangles). Every frame each
+Iyelle is an icosahedron subdivided 26 times (14,580 triangles). Every frame each
 vertex is pushed along its radius by three layered sine waves — that's the morph.
 
 That math runs in the **vertex shader**, not JavaScript. At this density the JS version
@@ -89,10 +105,15 @@ needs a neutral specular highlight to read as metal rather than as flat brass.
 
 ## The dashboard
 
-`/dashboard.html` reads the n8n instance through the proxy and renders workflows,
-execution history, and a Blocks panel that names what is stuck — failing workflows,
-nodes with no credential attached, workflows built and left switched off, empty shells.
-Each detected block carries one concrete next action.
+`/dashboard.html` reads the n8n instance through the proxy and renders traffic engines,
+execution history, and a Blocks panel that names what is stuck — failing engines, nodes
+with no credential attached, engines built and left switched off, empty shells. Each
+detected block carries one concrete next action. That panel is the product promise in
+miniature, and the hero copy points straight at it: Iyelle names the one that isn't
+running.
+
+The Ask panel answers from the data already on the page — no model call, no key, no
+cost. It is Iyelle's voice, not a second system.
 
 It needs `N8N_API_KEY` set in the Vercel project. Without it the page renders a setup
 alert explaining exactly which two steps are missing, rather than an error.

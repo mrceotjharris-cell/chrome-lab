@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>goldentune.ai</title>
-<meta name="description" content="Server-side tracking for cleaner data and smarter AI. The future runs on servers, not browsers." />
+<meta name="description" content="Iyelle is the Goldentune model that keeps your traffic engines running, and names the one that isn't." />
 <meta name="theme-color" content="#000000" />
 <meta property="og:title" content="goldentune.ai" />
-<meta property="og:description" content="Server-side tracking for cleaner data and smarter AI. The future runs on servers, not browsers." />
+<meta property="og:description" content="Iyelle is the Goldentune model that keeps your traffic engines running, and names the one that isn't." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><radialGradient id='g' cx='38%25' cy='33%25'><stop offset='0' stop-color='%23ffdd77'/><stop offset='.5' stop-color='%23f5c542'/><stop offset='1' stop-color='%23c8901e'/></radialGradient></defs><circle cx='16' cy='16' r='10' fill='url(%23g)'/></svg>" />
 <style>
   /* Same token set as dashboard.html. Gold is identity; the one status
@@ -60,9 +60,13 @@
   /* Neutral, not gold: the mesh drifts behind these lines, and gold-on-gold
      disappeared completely. The dark halo keeps them legible over both the
      black ground and the bright mesh. */
-  .lede{margin:18px auto 0;max-width:24ch;font-size:clamp(15px,2.6vw,26px);font-weight:600;
-        line-height:1.35;letter-spacing:-.01em;color:var(--txt);
+  .lede{margin:18px auto 0;max-width:30ch;font-size:clamp(15px,2.4vw,24px);font-weight:600;
+        line-height:1.4;letter-spacing:-.01em;color:var(--txt);
         text-shadow:0 1px 12px rgba(0,0,0,.95),0 0 30px rgba(0,0,0,.85)}
+  /* Iyelle is a name, so it takes the brand gold — same rule as the .ai above.
+     The mesh behind this copy is Iyelle; the gold ties the word to the shape. */
+  .lede i{font-style:normal;color:var(--gold);
+          text-shadow:0 1px 12px rgba(0,0,0,.95),0 0 34px rgba(245,197,66,.6)}
   .tag{margin-top:16px;font-size:clamp(8px,1.5vw,10.5px);font-weight:600;letter-spacing:.34em;
        text-transform:uppercase;color:var(--txt);
        text-shadow:0 1px 10px rgba(0,0,0,.95),0 0 26px rgba(0,0,0,.8)}
@@ -107,12 +111,13 @@
 
 <div id="hero">
   <h1>goldentune<i>.ai</i></h1>
-  <p class="lede">The future runs on servers, not browsers.</p>
-  <div class="tag">server-side tracking · cleaner data · smarter ai</div>
+  <p class="lede">Meet <i>Iyelle</i> — the model that keeps your traffic engines
+     running, and names the one that isn't.</p>
+  <div class="tag">server-side tracking · continuous tuning · one next action</div>
 </div>
 
 <div class="panel" id="meta">
-  <div class="stat"><span class="dot"></span><span id="st">BOOTING</span></div>
+  <div class="stat"><span class="dot"></span><span id="st">IYELLE · BOOTING</span></div>
   <div class="kv"><span>fps</span><span id="fps">—</span></div>
   <div class="kv"><span>triangles</span><span id="tri">—</span></div>
   <div class="kv"><span>page weight</span><span id="wt">—</span></div>
@@ -3991,7 +3996,7 @@ vec3 blobNormal(vec3 p, vec3 n){
   vec3 p0 = blobDisplace(p);
   return normalize(cross(blobDisplace(p + t1*eps) - p0, blobDisplace(p + t2*eps) - p0));
 }`;function Wl(i,e){i.onBeforeCompile=t=>{Object.assign(t.uniforms,Gl),t.vertexShader=t.vertexShader.replace("#include <common>",`#include <common>
-`+im),e&&(t.vertexShader=t.vertexShader.replace("#include <beginnormal_vertex>","vec3 objectNormal = blobNormal( position, normal );")),t.vertexShader=t.vertexShader.replace("#include <begin_vertex>","vec3 transformed = blobDisplace( position );")},i.customProgramCacheKey=()=>"blob"+(e?"lit":"unlit")}var Ua=new Te(Zt.color),Xl=new Fs({color:Ua,metalness:1,roughness:.085,envMapIntensity:2.4,clearcoat:1,clearcoatRoughness:.04,emissive:Ua,emissiveIntensity:.06}),ql=new yn({color:Ua,wireframe:!0,transparent:!0,opacity:Zt.opacity,depthWrite:!1,blending:ui});Wl(Xl,!0);Wl(ql,!1);var bn,ki=new Mt(new Pt,Xl),js=new Mt(new Pt,ql);js.scale.setScalar(1.012);kn.add(ki,js);function Yl(i){let e=bn;bn=new Ds(1.5,i),bn.deleteAttribute("uv"),bn.deleteAttribute("normal"),bn.computeVertexNormals(),ki.geometry=bn,js.geometry=bn,e&&e.dispose(),Js=i;let t=document.getElementById("tri");t&&(t.textContent=(bn.attributes.position.count/3).toLocaleString())}Yl(Js);var sm=Zt.glow>.02,Vn=null;sm&&(Vn=new Xs(Jt),Vn.addPass(new qs(kn,Hi)),Vn.addPass(new Mi(new ve(innerWidth,innerHeight),Zt.glow,.45,.82)),Vn.addPass(new Ys));var $s=new vi,Ks=!0,Zl=0,La=0,Zs=0,Ia=0,Fl=!1;function Da(){Zl=requestAnimationFrame(Da);let i=Math.min($s.getDelta(),.05);if(Gl.uTime.value=$s.elapsedTime,Bl||(ki.rotation.y+=i*Zt.spin,ki.rotation.x+=i*Zt.spin*.34,js.rotation.copy(ki.rotation)),Vn?Vn.render():Jt.render(kn,Hi),La++,Zs+=i,Zs>=1){let e=La/Zs,t=document.getElementById("fps");if(t&&(t.textContent=Math.round(e),t.style.color=e>=50?"var(--ok)":e>=30?"var(--warn)":"var(--bad)"),e<45&&!Fl){if(++Ia>=3){let n=Math.max(10,Js-5);n<Js?Yl(n):Fl=!0,Ia=0}}else Ia=0;La=0,Zs=0}}function Jl(){Ks||(Ks=!0,$s.start(),Da())}function $l(){Ks&&(Ks=!1,cancelAnimationFrame(Zl),$s.stop())}document.addEventListener("visibilitychange",()=>document.hidden?$l():Jl());new IntersectionObserver(([i])=>i.isIntersecting?Jl():$l(),{threshold:0}).observe(Ol);Da();addEventListener("resize",()=>{Hi.aspect=innerWidth/innerHeight,Hi.updateProjectionMatrix(),Jt.setSize(innerWidth,innerHeight),Vn?.setSize(innerWidth,innerHeight)});addEventListener("load",()=>setTimeout(()=>{let i=0;for(let s of performance.getEntriesByType("resource"))i+=s.transferSize||s.encodedBodySize||0;let e=performance.getEntriesByType("navigation")[0];e&&(i+=e.transferSize||e.encodedBodySize||0);let t=document.getElementById("wt");t&&(t.textContent=i?(i/1024).toFixed(0)+" KB":"\u2014");let n=document.getElementById("st");n&&(n.textContent="LIVE"),document.body.classList.add("ready")},600));})();
+`+im),e&&(t.vertexShader=t.vertexShader.replace("#include <beginnormal_vertex>","vec3 objectNormal = blobNormal( position, normal );")),t.vertexShader=t.vertexShader.replace("#include <begin_vertex>","vec3 transformed = blobDisplace( position );")},i.customProgramCacheKey=()=>"blob"+(e?"lit":"unlit")}var Ua=new Te(Zt.color),Xl=new Fs({color:Ua,metalness:1,roughness:.085,envMapIntensity:2.4,clearcoat:1,clearcoatRoughness:.04,emissive:Ua,emissiveIntensity:.06}),ql=new yn({color:Ua,wireframe:!0,transparent:!0,opacity:Zt.opacity,depthWrite:!1,blending:ui});Wl(Xl,!0);Wl(ql,!1);var bn,ki=new Mt(new Pt,Xl),js=new Mt(new Pt,ql);js.scale.setScalar(1.012);kn.add(ki,js);function Yl(i){let e=bn;bn=new Ds(1.5,i),bn.deleteAttribute("uv"),bn.deleteAttribute("normal"),bn.computeVertexNormals(),ki.geometry=bn,js.geometry=bn,e&&e.dispose(),Js=i;let t=document.getElementById("tri");t&&(t.textContent=(bn.attributes.position.count/3).toLocaleString())}Yl(Js);var sm=Zt.glow>.02,Vn=null;sm&&(Vn=new Xs(Jt),Vn.addPass(new qs(kn,Hi)),Vn.addPass(new Mi(new ve(innerWidth,innerHeight),Zt.glow,.45,.82)),Vn.addPass(new Ys));var $s=new vi,Ks=!0,Zl=0,La=0,Zs=0,Ia=0,Fl=!1;function Da(){Zl=requestAnimationFrame(Da);let i=Math.min($s.getDelta(),.05);if(Gl.uTime.value=$s.elapsedTime,Bl||(ki.rotation.y+=i*Zt.spin,ki.rotation.x+=i*Zt.spin*.34,js.rotation.copy(ki.rotation)),Vn?Vn.render():Jt.render(kn,Hi),La++,Zs+=i,Zs>=1){let e=La/Zs,t=document.getElementById("fps");if(t&&(t.textContent=Math.round(e),t.style.color=e>=50?"var(--ok)":e>=30?"var(--warn)":"var(--bad)"),e<45&&!Fl){if(++Ia>=3){let n=Math.max(10,Js-5);n<Js?Yl(n):Fl=!0,Ia=0}}else Ia=0;La=0,Zs=0}}function Jl(){Ks||(Ks=!0,$s.start(),Da())}function $l(){Ks&&(Ks=!1,cancelAnimationFrame(Zl),$s.stop())}document.addEventListener("visibilitychange",()=>document.hidden?$l():Jl());new IntersectionObserver(([i])=>i.isIntersecting?Jl():$l(),{threshold:0}).observe(Ol);Da();addEventListener("resize",()=>{Hi.aspect=innerWidth/innerHeight,Hi.updateProjectionMatrix(),Jt.setSize(innerWidth,innerHeight),Vn?.setSize(innerWidth,innerHeight)});addEventListener("load",()=>setTimeout(()=>{let i=0;for(let s of performance.getEntriesByType("resource"))i+=s.transferSize||s.encodedBodySize||0;let e=performance.getEntriesByType("navigation")[0];e&&(i+=e.transferSize||e.encodedBodySize||0);let t=document.getElementById("wt");t&&(t.textContent=i?(i/1024).toFixed(0)+" KB":"\u2014");let n=document.getElementById("st");n&&(n.textContent="IYELLE · LIVE"),document.body.classList.add("ready")},600));})();
 /*! Bundled license information:
 
 three/build/three.module.js:

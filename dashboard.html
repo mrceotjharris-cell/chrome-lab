@@ -131,7 +131,7 @@
   .sech .n{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.1em}
   .sech .sp{flex:1}
 
-  /* ---------- workflow cards ---------- */
+  /* ---------- engine cards ---------- */
   .wf{display:grid;gap:9px}
   .card{display:block;padding:13px 14px;border-radius:11px;
     background:rgba(255,255,255,.026);border:1px solid var(--hair);transition:.16s}
@@ -262,7 +262,7 @@
   <div id="alerts"></div>
 
   <div class="tiles">
-    <div class="tile panel"><div class="k">workflows</div><div class="v" id="t1">—</div><div class="s" id="t1s">&nbsp;</div></div>
+    <div class="tile panel"><div class="k">traffic engines</div><div class="v" id="t1">—</div><div class="s" id="t1s">&nbsp;</div></div>
     <div class="tile panel"><div class="k">active</div><div class="v" id="t2">—</div><div class="s" id="t2s">&nbsp;</div></div>
     <div class="tile panel"><div class="k">runs · 24h</div><div class="v" id="t3">—</div><div class="s" id="t3s">&nbsp;</div></div>
     <div class="tile panel"><div class="k">success rate</div><div class="v" id="t4">—</div><div class="s" id="t4s">&nbsp;</div></div>
@@ -282,7 +282,7 @@
 
   <div class="cols">
     <section class="sec panel">
-      <div class="sech"><h2>Workflows</h2><div class="sp"></div><div class="n" id="wfn"></div></div>
+      <div class="sech"><h2>Traffic engines</h2><div class="sp"></div><div class="n" id="wfn"></div></div>
       <div class="wf" id="wf"><div class="empty">loading…</div></div>
     </section>
 
@@ -296,14 +296,14 @@
 <div class="panel" id="chat">
   <div class="chead" id="chead">
     <span class="dot on"></span>
-    <h2>Ask</h2>
+    <h2>Ask Iyelle</h2>
     <span class="tg" id="tg">–</span>
   </div>
   <div class="cbody">
     <div class="msgs" id="msgs"></div>
     <div class="sug" id="sug"></div>
     <div class="cin">
-      <input id="q" placeholder="ask about your workflows…" autocomplete="off" />
+      <input id="q" placeholder="ask Iyelle about your traffic engines…" autocomplete="off" />
       <button id="send">send</button>
     </div>
   </div>
@@ -340,9 +340,11 @@ function dur(a,b){
 }
 const isFail = st => ['error','crashed','failed'].includes(String(st).toLowerCase());
 const isRun  = st => ['running','new','waiting'].includes(String(st).toLowerCase());
-const wfName = id => (WF.find(w => String(w.id) === String(id))||{}).name || ('workflow '+id);
+const wfName = id => (WF.find(w => String(w.id) === String(id))||{}).name || ('engine '+id);
 const runsOf = id => EX.filter(e => String(e.workflowId) === String(id));
-// archived workflows still exist in n8n but are shelved — keep them visible, exclude from counts
+// 'workflow' survives in the API contract and the n8n payload shape — the resource
+// path, workflowId, and the grab() call below are upstream names, not our copy.
+// archived engines still exist in n8n but are shelved — keep them visible, exclude from counts
 const live = () => WF.filter(w => !w.archived);
 
 /* ══════════ fetch ══════════ */
@@ -445,7 +447,7 @@ function renderTiles(){
 
 function renderWF(){
   const el = $('wf');
-  if(!WF.length){ el.innerHTML = '<div class="empty">no workflows on this instance</div>'; return; }
+  if(!WF.length){ el.innerHTML = '<div class="empty">no traffic engines on this instance</div>'; return; }
   $('wfn').textContent = live().length + ' live'
     + (WF.length > live().length ? ` · ${WF.length-live().length} archived` : '');
 
@@ -487,7 +489,7 @@ function renderWF(){
 
 function renderEX(){
   const el = $('ex');
-  if(!EX.length){ el.innerHTML = '<div class="empty">no executions recorded yet<br><span class="mono-sm">workflows must run at least once</span></div>'; return; }
+  if(!EX.length){ el.innerHTML = '<div class="empty">no executions recorded yet<br><span class="mono-sm">engines must run at least once</span></div>'; return; }
   const sorted = [...EX].sort((a,b) => new Date(b.startedAt)-new Date(a.startedAt));
   $('exn').textContent = sorted.length + ' runs';
   el.innerHTML = sorted.map(e => {
@@ -530,7 +532,7 @@ function detectBlocks(){
     }
     if(w.nodeCount === 0){
       out.push({ sev:1, t:`<b>${name}</b> is an empty shell`,
-        s:`No nodes at all. <em>Either build it or archive it — an empty workflow in the list is just noise.</em>` });
+        s:`No nodes at all. <em>Either build it or archive it — an empty engine in the list is just noise.</em>` });
       continue;
     }
     if(w.missingCreds && w.missingCreds.length){
@@ -561,7 +563,7 @@ function renderBlocks(){
         `<div class="blk sev${b.sev}"><div class="bd">
            <div class="bt">${b.t}</div><div class="bs">${b.s}</div>
          </div></div>`).join('')
-    : (failed ? '' : '<div class="bkclear">Nothing detected. Every workflow is active, credentialled and passing.</div>');
+    : (failed ? '' : '<div class="bkclear">Nothing detected. Every traffic engine is active, credentialled and passing.</div>');
 
   $('bkmine').innerHTML = mine.length
     ? '<div class="bkhd">named by you</div>' + mine.map(b =>
@@ -598,12 +600,12 @@ const SUGGEST = ['what is failing?','what is switched off?','what ran today?','w
 function answer(qRaw){
   const q = qRaw.toLowerCase().trim();
   if(failed) return `I can't reach n8n right now — <b>${esc(String(failed.message).replace(/\.$/,''))}</b>. Fix that first, then ask again.`;
-  if(!WF.length) return `No workflows loaded yet.`;
+  if(!WF.length) return `No traffic engines loaded yet.`;
 
   const has = (...w) => w.some(x => q.includes(x));
   const list = rows => rows.map(r => `<div class="li"><i>▸</i><span>${r}</span></div>`).join('');
 
-  // named workflow lookup
+  // named engine lookup
   const named = WF.find(w => w.name && q.includes(w.name.toLowerCase().split('(')[0].trim().toLowerCase()));
   if(named && !has('all','every','summary')){
     const runs = runsOf(named.id).sort((a,b)=>new Date(b.startedAt)-new Date(a.startedAt));
@@ -629,19 +631,19 @@ function answer(qRaw){
   if(has('off','inactive','disabled','not active','switched')){
     const off = live().filter(w=>!w.active);
     if(!off.length) return `Everything is active.`;
-    return `<b>${off.length}</b> of ${live().length} workflow${live().length===1?'':'s'} are switched off, so they never run on their own:` +
+    return `<b>${off.length}</b> of ${live().length} engine${live().length===1?'':'s'} are switched off, so they never run on their own:` +
       list(off.map(w=>esc(w.name)));
   }
 
   if(has('active','turned on','running','live','scheduled')){
     const on = live().filter(w=>w.active);
-    if(!on.length) return `<b>Nothing is active.</b> All ${live().length} workflows are switched off — none of them will run on a schedule.`;
+    if(!on.length) return `<b>Nothing is active.</b> All ${live().length} traffic engines are switched off — none of them will run on a schedule.`;
     return `<b>${on.length}</b> active:` + list(on.map(w=>esc(w.name)));
   }
 
   if(has('never','unused','not run','zero run')){
     const n = live().filter(w=>runsOf(w.id).length===0);
-    if(!n.length) return `Every workflow has run at least once.`;
+    if(!n.length) return `Every traffic engine has run at least once.`;
     return `<b>${n.length}</b> never executed:` + list(n.map(w=>esc(w.name)));
   }
 
@@ -671,17 +673,17 @@ function answer(qRaw){
 
   if(has('help','what can','how do')){
     return `I read the data on this page and answer from it. Try:` +
-      list(['what is failing','what is switched off','what ran today','which never ran','slowest runs','node counts','or name any workflow']);
+      list(['what is failing','what is switched off','what ran today','which never ran','slowest runs','node counts','or name any engine']);
   }
 
   // default summary
   const act = live().filter(w=>w.active).length;
   const f = EX.filter(e=>isFail(e.status)).length;
   const never = live().filter(w=>runsOf(w.id).length===0).length;
-  return `<b>${live().length}</b> workflows, <b>${act}</b> active.` + list([
+  return `<b>${live().length}</b> traffic engines, <b>${act}</b> active.` + list([
     `${EX.length} recorded run${EX.length===1?'':'s'}${f?`, ${f} failed`:', none failed'}`,
-    `${never} workflow${never===1?'':'s'} never run`,
-    act===0 ? '<b>nothing is scheduled</b> — no workflow will run on its own' : `${act} will run on schedule`
+    `${never} engine${never===1?'':'s'} never run`,
+    act===0 ? '<b>nothing is scheduled</b> — no engine will run on its own' : `${act} will run on schedule`
   ]);
 }
 
