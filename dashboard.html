@@ -88,6 +88,8 @@
     background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);transition:.16s}
   .card:hover{border-color:rgba(79,245,255,.34);background:rgba(79,245,255,.055)}
   .card.live{border-color:rgba(200,255,46,.3)}
+  .card.arc{opacity:.45}
+  .card.arc:hover{opacity:.8}
   .cr1{display:flex;align-items:center;gap:9px;margin-bottom:9px}
   .nm{font-size:13px;color:#eaf2ff;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pill{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:20px;
@@ -242,6 +244,8 @@ const isFail = st => ['error','crashed','failed'].includes(String(st).toLowerCas
 const isRun  = st => ['running','new','waiting'].includes(String(st).toLowerCase());
 const wfName = id => (WF.find(w => String(w.id) === String(id))||{}).name || ('workflow '+id);
 const runsOf = id => EX.filter(e => String(e.workflowId) === String(id));
+// archived workflows still exist in n8n but are shelved — keep them visible, exclude from counts
+const live = () => WF.filter(w => !w.archived);
 
 /* ══════════ fetch ══════════ */
 async function grab(resource, limit){
@@ -312,20 +316,23 @@ function renderAlert(){
 }
 
 function renderTiles(){
-  const act = WF.filter(w => w.active).length;
+  const L = live();
+  const act = L.filter(w => w.active).length;
+  const arch = WF.length - L.length;
   const day = EX.filter(e => Date.now() - new Date(e.startedAt) < 864e5);
   const done = EX.filter(e => !isRun(e.status));
   const ok = done.filter(e => !isFail(e.status)).length;
   const rate = done.length ? Math.round(ok/done.length*100) : null;
-  const never = WF.filter(w => runsOf(w.id).length === 0).length;
+  const never = L.filter(w => runsOf(w.id).length === 0).length;
 
-  $('t1').textContent = WF.length;
+  $('t1').textContent = L.length;
   $('t1').className = 'v';
-  $('t1s').textContent = never ? `${never} never run` : 'all have run';
+  $('t1s').textContent = [never ? `${never} never run` : 'all have run',
+                          arch ? `${arch} archived` : ''].filter(Boolean).join(' · ');
 
   $('t2').textContent = act;
   $('t2').className = 'v ' + (act ? 'lime' : 'dim');
-  $('t2s').textContent = act ? `${WF.length-act} switched off` : 'nothing is scheduled';
+  $('t2s').textContent = act ? `${L.length-act} switched off` : 'nothing is scheduled';
 
   $('t3').textContent = day.length;
   $('t3').className = 'v ' + (day.length ? 'cyan' : 'dim');
@@ -340,16 +347,17 @@ function renderTiles(){
 function renderWF(){
   const el = $('wf');
   if(!WF.length){ el.innerHTML = '<div class="empty">no workflows on this instance</div>'; return; }
-  $('wfn').textContent = WF.length + ' total';
+  $('wfn').textContent = live().length + ' live'
+    + (WF.length > live().length ? ` · ${WF.length-live().length} archived` : '');
 
   const sorted = [...WF].sort((a,b) =>
+    (a.archived?1:0)-(b.archived?1:0) ||          // archived sink to the bottom
     (b.active?1:0)-(a.active?1:0) ||
     new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
 
   el.innerHTML = sorted.map(w => {
     const runs = runsOf(w.id).sort((a,b) => new Date(b.startedAt)-new Date(a.startedAt));
     const last = runs[0];
-    const nodes = Array.isArray(w.nodes) ? w.nodes.length : null;
     let lastHtml;
     if(!last) lastHtml = '<span class="none">never run</span>';
     else if(isFail(last.status)) lastHtml = `<b class="bad">failed</b> ${ago(last.startedAt)} ago`;
@@ -357,17 +365,20 @@ function renderWF(){
     else lastHtml = `<b class="ok">ok</b> ${ago(last.startedAt)} ago`;
 
     const fails = runs.filter(r => isFail(r.status)).length;
+    const empty = w.nodeCount === 0;
 
-    return `<div class="card${w.active?' live':''}">
+    return `<div class="card${w.active?' live':''}${w.archived?' arc':''}">
       <div class="cr1">
         <span class="dot${w.active?' on':''}"></span>
         <span class="nm">${esc(w.name)}</span>
-        <span class="pill ${w.active?'on':'off'}">${w.active?'active':'inactive'}</span>
+        ${w.archived ? '<span class="pill off">archived</span>'
+                     : `<span class="pill ${w.active?'on':'off'}">${w.active?'active':'inactive'}</span>`}
       </div>
       <div class="cr2">
-        <span>${nodes!==null?`<b>${nodes}</b> nodes`:'nodes —'}</span>
+        <span${empty?' class="bad"':''}>${empty?'<b class="bad">empty</b> — no nodes':`<b>${w.nodeCount}</b> nodes`}</span>
+        ${w.trigger?`<span>${esc(w.trigger)}</span>`:''}
         <span><b>${runs.length}</b> runs</span>
-        ${fails?`<span class="bad"><b class="bad">${fails}</b> failed</span>`:''}
+        ${fails?`<span><b class="bad">${fails}</b> failed</span>`:''}
         <span>last: ${lastHtml}</span>
       </div>
       ${w.description?`<div class="desc">${esc(w.description)}</div>`:''}
@@ -409,12 +420,15 @@ function answer(qRaw){
   if(named && !has('all','every','summary')){
     const runs = runsOf(named.id).sort((a,b)=>new Date(b.startedAt)-new Date(a.startedAt));
     const f = runs.filter(r=>isFail(r.status)).length;
-    return `<b>${esc(named.name)}</b> is <b>${named.active?'active':'inactive'}</b>.` + list([
-      `${Array.isArray(named.nodes)?named.nodes.length:'?'} nodes`,
+    return `<b>${esc(named.name)}</b> is <b>${named.archived?'archived':named.active?'active':'inactive'}</b>.` + list([
+      named.nodeCount === 0 ? '<b>empty — it has no nodes at all</b>' : `${named.nodeCount} nodes`,
+      named.trigger ? `trigger: ${esc(named.trigger)}` : null,
       `${runs.length} run${runs.length===1?'':'s'}${f?`, ${f} failed`:''}`,
       runs[0] ? `last run ${ago(runs[0].startedAt)} ago — ${isFail(runs[0].status)?'failed':'ok'}` : 'never run',
-      named.active ? 'it is scheduled and will run on its own' : 'it will not run until you activate it'
-    ]);
+      named.archived ? 'archived, so it is shelved and will not run'
+                     : named.active ? 'it is scheduled and will run on its own'
+                                    : 'it will not run until you activate it'
+    ].filter(Boolean));
   }
 
   if(has('fail','error','broken','red','wrong')){
@@ -425,20 +439,20 @@ function answer(qRaw){
   }
 
   if(has('off','inactive','disabled','not active','switched')){
-    const off = WF.filter(w=>!w.active);
+    const off = live().filter(w=>!w.active);
     if(!off.length) return `Everything is active.`;
-    return `<b>${off.length}</b> of ${WF.length} workflow${WF.length===1?'':'s'} are switched off, so they never run on their own:` +
+    return `<b>${off.length}</b> of ${live().length} workflow${live().length===1?'':'s'} are switched off, so they never run on their own:` +
       list(off.map(w=>esc(w.name)));
   }
 
   if(has('active','turned on','running','live','scheduled')){
-    const on = WF.filter(w=>w.active);
-    if(!on.length) return `<b>Nothing is active.</b> All ${WF.length} workflows are switched off — none of them will run on a schedule.`;
+    const on = live().filter(w=>w.active);
+    if(!on.length) return `<b>Nothing is active.</b> All ${live().length} workflows are switched off — none of them will run on a schedule.`;
     return `<b>${on.length}</b> active:` + list(on.map(w=>esc(w.name)));
   }
 
   if(has('never','unused','not run','zero run')){
-    const n = WF.filter(w=>runsOf(w.id).length===0);
+    const n = live().filter(w=>runsOf(w.id).length===0);
     if(!n.length) return `Every workflow has run at least once.`;
     return `<b>${n.length}</b> never executed:` + list(n.map(w=>esc(w.name)));
   }
@@ -458,11 +472,13 @@ function answer(qRaw){
     return `Slowest runs:` + list(t.slice(0,5).map(x=>`${esc(wfName(x.e.workflowId))} — ${(x.ms/1000).toFixed(1)}s`));
   }
 
-  if(has('node','big','complex','size')){
-    const s = [...WF].filter(w=>Array.isArray(w.nodes))
-      .sort((a,b)=>b.nodes.length-a.nodes.length);
-    if(!s.length) return `Node counts aren't in this response.`;
-    return `By node count:` + list(s.map(w=>`${esc(w.name)} — <b>${w.nodes.length}</b>`));
+  if(has('node','big','complex','size','empty')){
+    const s = [...live()].sort((a,b)=>(b.nodeCount||0)-(a.nodeCount||0));
+    if(!s.length) return `Nothing to count.`;
+    const empties = s.filter(w=>w.nodeCount===0);
+    return `By node count:` + list(s.map(w=>
+      `${esc(w.name)} — <b>${w.nodeCount}</b>${w.nodeCount===0?' (empty shell)':''}`))
+      + (empties.length?`<div class="li"><i></i><span>${empties.length} of these ${empties.length===1?'is an empty':'are empty'} shell${empties.length===1?'':'s'} with nothing in ${empties.length===1?'it':'them'}.</span></div>`:'');
   }
 
   if(has('help','what can','how do')){
@@ -471,10 +487,10 @@ function answer(qRaw){
   }
 
   // default summary
-  const act = WF.filter(w=>w.active).length;
+  const act = live().filter(w=>w.active).length;
   const f = EX.filter(e=>isFail(e.status)).length;
-  const never = WF.filter(w=>runsOf(w.id).length===0).length;
-  return `<b>${WF.length}</b> workflows, <b>${act}</b> active.` + list([
+  const never = live().filter(w=>runsOf(w.id).length===0).length;
+  return `<b>${live().length}</b> workflows, <b>${act}</b> active.` + list([
     `${EX.length} recorded run${EX.length===1?'':'s'}${f?`, ${f} failed`:', none failed'}`,
     `${never} workflow${never===1?'':'s'} never run`,
     act===0 ? '<b>nothing is scheduled</b> — no workflow will run on its own' : `${act} will run on schedule`
