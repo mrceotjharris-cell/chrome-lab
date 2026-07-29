@@ -118,6 +118,22 @@ Every one of these was caught on screen, not by reading the CSS. They will recur
 5. **Neutral highlights in the environment map.** Two of the six bars are white on
    purpose. Gold needs a neutral specular highlight or the metal reads as flat brass.
 
+## The hero, and Iyelle's lighting
+
+Iyelle is the subject of the hero — big type, and the mesh *is* Iyelle. Goldentune is
+the company and sits above it as a small recessed mark (`.co`, ~50% opacity), not as
+the headline. Do not flip that back without being asked.
+
+The blob's material is a mirror (`metalness:1, roughness:.085`), so its light comes from
+the environment map. Two scene-parented `DirectionalLight`s orbit on different periods to
+sweep specular highlights across it; bloom and emissive breathe on separate sines. Parent
+them to the mesh and the highlights freeze — that defeats the whole effect.
+
+`PointLight` was tree-shaken out of the bundle. `DirectionalLight` and `AmbientLight`
+survived. Before instantiating any Three.js class in that minified bundle, grep for its
+`is<Name>=!0` marker to confirm it actually shipped, then grep for the minified
+identifier — the names are single letters and change on rebuild.
+
 ## Working method
 
 Do not commit a visual change you have not looked at. Serve the repo locally and

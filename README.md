@@ -111,6 +111,27 @@ passed through `PMREMGenerator`. The reflections are what sell the metal; the me
 itself is trivial. Two of the six bars are deliberately left neutral white: the gold
 needs a neutral specular highlight to read as metal rather than as flat brass.
 
+### Iyelle's lighting
+
+The material is `metalness:1, roughness:.085` — effectively a mirror — so originally
+all of its light came from that fixed environment map, and the only thing in motion was
+the mesh turning underneath it. Two `DirectionalLight`s now orbit the scene on different
+periods (`gtKey` gold, `gtRim` near-neutral), dragging real specular sweeps across the
+surface as it morphs. Bloom strength and emissive intensity breathe on separate slow
+sines so the cycle never lands on the same beat twice.
+
+The lights are parented to the scene rather than the mesh, so they stay fixed in world
+space while the blob rotates beneath them — parent them to the mesh and the highlights
+freeze, which defeats the point.
+
+`PointLight` is **not available in this bundle** — esbuild tree-shook it out, since the
+original scene used no lights at all. `DirectionalLight` and `AmbientLight` survived.
+For a mirror, directional is the better choice anyway: a broad sweep rather than a
+pinpoint hotspot.
+
+All of it sits inside the existing `prefers-reduced-motion` guard, so the lights hold
+their opening positions rather than orbiting when motion is reduced.
+
 ## The dashboard
 
 `/dashboard.html` reads the n8n instance through the proxy and renders traffic engines,
