@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CHROME LAB // OPS</title>
+<title>goldentune.ai // ops</title>
 <meta name="robots" content="noindex" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><radialGradient id='g' cx='38%25' cy='33%25'><stop offset='0' stop-color='%23ffdd77'/><stop offset='.5' stop-color='%23f5c542'/><stop offset='1' stop-color='%23c8901e'/></radialGradient></defs><circle cx='16' cy='16' r='10' fill='url(%23g)'/></svg>" />
 <style>
@@ -89,6 +89,9 @@
   .brand::before{content:"";width:19px;height:19px;border-radius:50%;flex:none;
     background:radial-gradient(circle at 38% 33%,var(--gold-hi),var(--gold) 46%,var(--gold-dp) 100%);
     box-shadow:0 0 16px 3px rgba(245,197,66,.55),0 0 42px 10px rgba(245,197,66,.22)}
+  /* one flex item, so the flex gap can't wedge itself into the domain */
+  .brand b{font-weight:700}
+  .brand i{font-style:normal;color:var(--gold)}   /* the tld carries the gold */
   .brand:hover{color:#fff}
   .brand:hover::before{box-shadow:0 0 20px 4px rgba(245,197,66,.72),0 0 56px 14px rgba(245,197,66,.28)}
   .brand span{color:var(--dim);font-weight:500;font-size:11px;letter-spacing:.22em;
@@ -249,7 +252,7 @@
 <div class="wrap">
 
   <header class="panel">
-    <a class="brand" href="/" title="back to the hero">CHROME LAB <span>// OPS</span></a>
+    <a class="brand" href="/" title="back to the hero"><b>goldentune<i>.ai</i></b> <span>// ops</span></a>
     <div class="hstat"><span class="dot" id="hdot"></span><span id="hst">CONNECTING</span></div>
     <div class="sp"></div>
     <div class="tick">next refresh <b id="cd">—</b></div>
