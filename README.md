@@ -7,7 +7,7 @@ The hero renders Iyelle: a morphing wireframe blob, procedural, live in the brow
 It is not decoration, it is the subject. Behind it sits a private ops dashboard for
 the n8n instance the engines actually run on.
 
-No image assets, no 3D model files, no build step.
+No 3D model files, no build step, no webfont. One image asset: the wordmark.
 
 ## Naming
 
@@ -24,9 +24,10 @@ person reads it, it is a traffic engine. Don't let the two leak into each other.
 ## What's in here
 
 ```
-index.html      the hero (495 KB, Three.js bundled inline)
-dashboard.html  the n8n ops view (36 KB, no dependencies)
-api/n8n.js      Vercel serverless proxy for the n8n Public API
+index.html                      the hero (495 KB, Three.js bundled inline)
+dashboard.html                  the n8n ops view (37 KB, no dependencies)
+api/n8n.js                      Vercel serverless proxy for the n8n Public API
+assets/goldentune-wordmark.png  the logo lettering (19 KB, transparent)
 ```
 
 The hero is fully static. The dashboard is static too, but calls `/api/n8n`,
@@ -59,10 +60,17 @@ mark, used as the page background on both pages, and the hairline wireframe
 sphere, drawn with a `repeating-radial-gradient` rather than an image. The
 dashboard header also carries the line-and-node circuit motif as an inline SVG.
 
-No webfont is loaded. The script wordmark is not reproduced — only its
-treatment — because pulling it in would put a third-party request on every page
-load. Prose and labels use the system UI stack; data keeps a monospace stack
-with tabular figures so numbers don't jitter as they refresh.
+**The wordmark is artwork, not type.** `assets/goldentune-wordmark.png` is the real
+logo's lettering, lifted off the source PNG: alpha keyed on `min(r,g,b)` with a floor
+of 80, which drops the black ground and the gold glow (whose min channel is 66) while
+keeping the script's anti-aliased edges. Cropped to the letterforms and flattened to
+white, it went from 452 KB to 19 KB and can be recoloured in CSS. Regenerate it the
+same way if the logo changes — do not re-crop the original by hand.
+
+No webfont is loaded, and there is still no script *typeface* here. Setting arbitrary
+text in that style is not possible; only the word "Goldentune" exists as artwork.
+Prose and labels use the system UI stack; data keeps a monospace stack with tabular
+figures so numbers don't jitter as they refresh.
 
 ## Changing the look
 

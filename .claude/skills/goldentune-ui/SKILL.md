@@ -79,9 +79,21 @@ Three, all from the brand artwork, all drawn in CSS — no image assets:
 
 ## Type
 
-System stacks only. **Do not add a webfont.** The script logotype is not reproduced,
-only its treatment; pulling it in would put a third-party request on every page load,
-which this repo has never had.
+System stacks only. **Do not add a webfont.**
+
+The script logotype exists as **artwork, not type**: `assets/goldentune-wordmark.png`,
+the real logo's lettering keyed out of the source PNG (alpha from `min(r,g,b)` with a
+floor of 80 — drops the black ground and the gold glow, keeps the anti-aliasing),
+cropped and flattened to white. 19 KB, transparent, recolourable.
+
+That means only the word "Goldentune" is available in the script. There is no typeface,
+so **arbitrary text cannot be set in it** — if a design calls for that, say so rather
+than substituting a lookalike system cursive.
+
+Two placement notes, both learned the hard way: the image's bottom edge is *not* the
+wordmark's baseline (the G carries a deep descender), so a tld or adjacent text needs a
+negative offset to sit correctly; and the wordmark is one flex item with its tld, or the
+flex gap opens a hole in the middle of the domain.
 
 - `--ui` for prose, labels, headings
 - `--mono` with `font-variant-numeric: tabular-nums` for all data — numbers refresh on a

@@ -53,10 +53,18 @@
                rgba(0,0,0,.52) 44%, transparent 72%)}
   /* No mix-blend-mode here any more — differenced against a gold blob it
      inverted the wordmark to blue every time the mesh drifted behind it. */
-  h1{font-size:clamp(38px,9vw,104px);font-weight:700;letter-spacing:-.015em;line-height:1;
-     color:#fff;text-shadow:0 2px 30px rgba(0,0,0,.85),0 0 70px rgba(245,197,66,.4)}
-  h1 i{font-style:normal;color:var(--gold);text-shadow:0 2px 30px rgba(0,0,0,.85),
-       0 0 46px rgba(245,197,66,.75)}
+  /* The wordmark is the real logo's lettering, lifted off the source PNG as a
+     transparent alpha mask (white script, gold glow and black ground keyed out).
+     It is artwork, not type — hence an <img>, not a webfont. */
+  h1{display:flex;align-items:baseline;justify-content:center;gap:.06em;
+     font-size:clamp(38px,9vw,104px);font-weight:700;line-height:1}
+  h1 img{width:clamp(230px,52vw,600px);height:auto;display:block;
+         filter:drop-shadow(0 2px 26px rgba(0,0,0,.9)) drop-shadow(0 0 60px rgba(245,197,66,.45))}
+  /* The script has a deep descender on the G, so the image's bottom edge is not
+     the wordmark's baseline. Nudge the tld up to sit on the lettering instead. */
+  h1 i{font-style:normal;color:var(--gold);font-size:clamp(19px,4vw,46px);
+       letter-spacing:-.015em;align-self:flex-end;padding-bottom:.62em;margin-left:-.12em;
+       text-shadow:0 2px 26px rgba(0,0,0,.9),0 0 40px rgba(245,197,66,.75)}
   /* Neutral, not gold: the mesh drifts behind these lines, and gold-on-gold
      disappeared completely. The dark halo keeps them legible over both the
      black ground and the bright mesh. */
@@ -110,7 +118,7 @@
 <div id="wash"></div><div id="grid"></div><div id="stage"></div>
 
 <div id="hero">
-  <h1>goldentune<i>.ai</i></h1>
+  <h1><img src="/assets/goldentune-wordmark.png" alt="Goldentune" /><i>.ai</i></h1>
   <p class="lede">Meet <i>Iyelle</i> — the model that keeps your traffic engines
      running, and names the one that isn't.</p>
   <div class="tag">server-side tracking · continuous tuning · one next action</div>
