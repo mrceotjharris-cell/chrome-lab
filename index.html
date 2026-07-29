@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>goldentune.ai</title>
-<meta name="description" content="Procedural 3D. Zero assets, zero API cost, rendered live in the browser." />
+<meta name="description" content="Server-side tracking for cleaner data and smarter AI. The future runs on servers, not browsers." />
 <meta name="theme-color" content="#000000" />
 <meta property="og:title" content="goldentune.ai" />
-<meta property="og:description" content="Procedural 3D. Zero assets, zero API cost, rendered live in the browser." />
+<meta property="og:description" content="Server-side tracking for cleaner data and smarter AI. The future runs on servers, not browsers." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><radialGradient id='g' cx='38%25' cy='33%25'><stop offset='0' stop-color='%23ffdd77'/><stop offset='.5' stop-color='%23f5c542'/><stop offset='1' stop-color='%23c8901e'/></radialGradient></defs><circle cx='16' cy='16' r='10' fill='url(%23g)'/></svg>" />
 <style>
   /* Same token set as dashboard.html. Gold is identity; the one status
@@ -44,15 +44,26 @@
   /* ---------- copy ---------- */
   #hero{position:fixed;z-index:5;left:0;right:0;top:50%;transform:translateY(-50%);
         text-align:center;pointer-events:none;padding:0 24px}
+  /* Soft scrim. Three stacked lines sit over the brightest part of the mesh,
+     and per-line text-shadow alone could not hold the small caps. Negative
+     z-index keeps it inside #hero's stacking context — above the canvas,
+     below the copy — and the radial falloff means no visible edge. */
+  #hero::before{content:"";position:absolute;inset:-14% -8%;z-index:-1;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,.74) 0%,
+               rgba(0,0,0,.52) 44%, transparent 72%)}
   /* No mix-blend-mode here any more — differenced against a gold blob it
      inverted the wordmark to blue every time the mesh drifted behind it. */
   h1{font-size:clamp(38px,9vw,104px);font-weight:700;letter-spacing:-.015em;line-height:1;
      color:#fff;text-shadow:0 2px 30px rgba(0,0,0,.85),0 0 70px rgba(245,197,66,.4)}
   h1 i{font-style:normal;color:var(--gold);text-shadow:0 2px 30px rgba(0,0,0,.85),
        0 0 46px rgba(245,197,66,.75)}
-  /* Neutral, not gold: the mesh drifts behind this line, and gold-on-gold
-     disappeared completely. The dark halo keeps it legible over both. */
-  .tag{margin-top:18px;font-size:clamp(8px,1.5vw,10.5px);font-weight:600;letter-spacing:.42em;
+  /* Neutral, not gold: the mesh drifts behind these lines, and gold-on-gold
+     disappeared completely. The dark halo keeps them legible over both the
+     black ground and the bright mesh. */
+  .lede{margin:18px auto 0;max-width:24ch;font-size:clamp(15px,2.6vw,26px);font-weight:600;
+        line-height:1.35;letter-spacing:-.01em;color:var(--txt);
+        text-shadow:0 1px 12px rgba(0,0,0,.95),0 0 30px rgba(0,0,0,.85)}
+  .tag{margin-top:16px;font-size:clamp(8px,1.5vw,10.5px);font-weight:600;letter-spacing:.34em;
        text-transform:uppercase;color:var(--txt);
        text-shadow:0 1px 10px rgba(0,0,0,.95),0 0 26px rgba(0,0,0,.8)}
 
@@ -96,7 +107,8 @@
 
 <div id="hero">
   <h1>goldentune<i>.ai</i></h1>
-  <div class="tag">procedural 3d · no assets · no api</div>
+  <p class="lede">The future runs on servers, not browsers.</p>
+  <div class="tag">server-side tracking · cleaner data · smarter ai</div>
 </div>
 
 <div class="panel" id="meta">
