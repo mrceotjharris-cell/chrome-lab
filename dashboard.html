@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CHROME LAB // OPS</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='11' fill='none' stroke='%23c8ff2e' stroke-width='2.5'/></svg>" />
+<style>
+  :root{
+    --cyan:#4ff5ff; --lime:#c8ff2e; --mag:#ff4fd8;
+    --red:#ff5f6d; --amber:#ffcc4f; --ink:#05060a;
+    --dim:#61728a; --txt:#dfe7f5;
+    --glass:rgba(11,15,26,.55);
+    --edge:rgba(79,245,255,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    min-height:100%;background:var(--ink);color:var(--txt);
+    font-family:"SF Mono",SFMono-Regular,"Roboto Mono",Menlo,Consolas,monospace;
+    font-size:13px;line-height:1.5;padding:0 0 120px;
+  }
+  /* ---------- background ---------- */
+  body::before,body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0}
+  body::before{background:
+    radial-gradient(58% 46% at 16% 8%, rgba(79,245,255,.13), transparent 68%),
+    radial-gradient(52% 42% at 88% 84%, rgba(255,79,216,.11), transparent 68%),
+    radial-gradient(46% 38% at 58% 108%, rgba(200,255,46,.09), transparent 68%);}
+  body::after{opacity:.1;
+    background-image:linear-gradient(rgba(79,245,255,.35) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(79,245,255,.35) 1px,transparent 1px);
+    background-size:46px 46px;
+    mask-image:radial-gradient(circle at 50% 0%,#000 10%,transparent 72%);
+    -webkit-mask-image:radial-gradient(circle at 50% 0%,#000 10%,transparent 72%);}
+  .wrap{position:relative;z-index:1;max-width:1360px;margin:0 auto;padding:22px 22px 0}
+
+  /* ---------- shared ---------- */
+  .panel{background:var(--glass);backdrop-filter:blur(20px) saturate(160%);
+    -webkit-backdrop-filter:blur(20px) saturate(160%);
+    border:1px solid var(--edge);border-radius:14px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 14px 44px rgba(0,0,0,.5)}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--dim)}
+  .dot.on{background:var(--lime);box-shadow:0 0 10px var(--lime);animation:p 1.7s ease-in-out infinite}
+  .dot.err{background:var(--red);box-shadow:0 0 10px var(--red)}
+  .dot.run{background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:p 1s linear infinite}
+  @keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.34;transform:scale(.7)}}
+  @media(prefers-reduced-motion:reduce){.dot{animation:none!important}}
+  .mono-sm{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+         padding:14px 18px;margin-bottom:18px}
+  .brand{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--lime);
+         text-shadow:0 0 16px rgba(200,255,46,.6);white-space:nowrap}
+  .brand span{color:var(--dim);text-shadow:none}
+  .hstat{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.12em;
+         text-transform:uppercase;color:#9fb0c6}
+  header .sp{flex:1}
+  .tick{font-size:10px;letter-spacing:.1em;color:var(--dim);white-space:nowrap}
+  .tick b{color:var(--cyan);font-weight:500}
+  button{font:inherit;font-size:9px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+    color:#93a4bb;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;padding:8px 13px;transition:.15s}
+  button:hover:not(:disabled){color:#eaf2ff;border-color:rgba(79,245,255,.5);background:rgba(79,245,255,.1)}
+  button:disabled{opacity:.4;cursor:wait}
+
+  /* ---------- stat tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .tile{padding:15px 16px}
+  .tile .k{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+  .tile .v{font-size:30px;font-weight:600;line-height:1;letter-spacing:-.01em}
+  .tile .s{font-size:9.5px;color:var(--dim);margin-top:7px;letter-spacing:.06em}
+  .v.lime{color:var(--lime)} .v.cyan{color:var(--cyan)}
+  .v.red{color:var(--red)} .v.amber{color:var(--amber)} .v.dim{color:#5b6b80}
+
+  /* ---------- layout ---------- */
+  .cols{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start}
+  .sec{padding:16px 17px 17px}
+  .sech{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .sech h2{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#9fb0c6;font-weight:500}
+  .sech .n{font-size:9px;color:var(--dim);letter-spacing:.1em}
+  .sech .sp{flex:1}
+
+  /* ---------- workflow cards ---------- */
+  .wf{display:grid;gap:9px}
+  .card{display:block;padding:13px 14px;border-radius:11px;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);transition:.16s}
+  .card:hover{border-color:rgba(79,245,255,.34);background:rgba(79,245,255,.055)}
+  .card.live{border-color:rgba(200,255,46,.3)}
+  .cr1{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .nm{font-size:13px;color:#eaf2ff;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pill{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:20px;
+        border:1px solid currentColor;white-space:nowrap;flex:none}
+  .pill.on{color:var(--lime)} .pill.off{color:#5b6b80}
+  .cr2{display:flex;gap:14px;flex-wrap:wrap;font-size:9.5px;letter-spacing:.06em;color:var(--dim)}
+  .cr2 b{color:#b6c6da;font-weight:500}
+  .cr2 .ok{color:var(--lime)} .cr2 .bad{color:var(--red)} .cr2 .none{color:#4d5c72;font-style:italic}
+  .desc{font-size:10px;color:#5f7085;margin-top:9px;line-height:1.55;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* ---------- executions ---------- */
+  .ex{display:grid;gap:6px;max-height:640px;overflow-y:auto;padding-right:3px}
+  .ex::-webkit-scrollbar{width:5px}
+  .ex::-webkit-scrollbar-thumb{background:rgba(79,245,255,.22);border-radius:4px}
+  .er{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;
+      background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.055);font-size:10.5px}
+  .er .wn{flex:1;color:#c3d3e6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .er .du{color:var(--dim);font-size:9px;white-space:nowrap}
+  .er .tm{color:#4d5c72;font-size:9px;white-space:nowrap;min-width:52px;text-align:right}
+  .er.f{border-color:rgba(255,95,109,.28);background:rgba(255,95,109,.06)}
+
+  .empty{padding:26px 16px;text-align:center;color:#4d5c72;font-size:11px;line-height:1.9}
+
+  /* ---------- setup / error ---------- */
+  .alert{padding:20px 22px;margin-bottom:18px;border-radius:14px;
+    border:1px solid rgba(255,95,109,.35);background:rgba(255,95,109,.07)}
+  .alert.setup{border-color:rgba(255,204,79,.35);background:rgba(255,204,79,.06)}
+  .alert h3{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin-bottom:10px}
+  .alert.setup h3{color:var(--amber)}
+  .alert p{font-size:11.5px;color:#b6c6da;margin-bottom:8px;line-height:1.65}
+  .alert code{background:rgba(0,0,0,.45);padding:2px 7px;border-radius:5px;
+    color:var(--cyan);font-size:10.5px;white-space:nowrap}
+  .alert ol{margin:10px 0 0 18px;font-size:11.5px;color:#b6c6da;line-height:1.95}
+
+  /* ---------- chat ---------- */
+  #chat{position:fixed;right:18px;bottom:18px;width:352px;z-index:60;
+        display:flex;flex-direction:column;max-height:min(560px,78vh)}
+  #chat.min .cbody{display:none}
+  .chead{display:flex;align-items:center;gap:9px;padding:12px 14px;cursor:pointer;
+         border-bottom:1px solid rgba(255,255,255,.07)}
+  .chead h2{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#9fb0c6;font-weight:500;flex:1}
+  .chead .tg{font-size:14px;color:var(--dim);line-height:1}
+  .cbody{display:flex;flex-direction:column;min-height:0}
+  .msgs{flex:1;overflow-y:auto;padding:13px 14px;display:grid;gap:10px;
+        align-content:start;max-height:340px;min-height:120px}
+  .msgs::-webkit-scrollbar{width:5px}
+  .msgs::-webkit-scrollbar-thumb{background:rgba(79,245,255,.22);border-radius:4px}
+  .m{font-size:11.5px;line-height:1.65;padding:9px 12px;border-radius:10px;max-width:92%}
+  .m.u{background:rgba(79,245,255,.13);border:1px solid rgba(79,245,255,.26);
+       color:#dff7ff;justify-self:end}
+  .m.a{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);color:#c3d3e6}
+  .m b{color:var(--lime);font-weight:500}
+  .m .li{display:flex;gap:7px;margin-top:5px;font-size:11px}
+  .m .li i{font-style:normal;color:var(--dim);flex:none}
+  .sug{display:flex;flex-wrap:wrap;gap:5px;padding:0 14px 11px}
+  .sug button{font-size:8.5px;padding:6px 9px;letter-spacing:.06em;text-transform:none}
+  .cin{display:flex;gap:8px;padding:11px 14px;border-top:1px solid rgba(255,255,255,.07)}
+  .cin input{flex:1;font:inherit;font-size:11.5px;color:var(--txt);background:rgba(0,0,0,.32);
+    border:1px solid rgba(255,255,255,.11);border-radius:9px;padding:9px 11px;outline:none}
+  .cin input:focus{border-color:rgba(79,245,255,.5)}
+  .cin button{padding:9px 13px}
+
+  @media(max-width:1080px){ .cols{grid-template-columns:1fr} .tiles{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:680px){
+    .wrap{padding:14px 13px 0} .tiles{grid-template-columns:repeat(2,1fr);gap:9px}
+    .tile .v{font-size:23px}
+    #chat{right:9px;left:9px;width:auto;bottom:9px}
+    header{gap:11px;padding:12px 14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="panel">
+    <div class="brand">CHROME LAB <span>// OPS</span></div>
+    <div class="hstat"><span class="dot" id="hdot"></span><span id="hst">CONNECTING</span></div>
+    <div class="sp"></div>
+    <div class="tick">next refresh <b id="cd">—</b></div>
+    <button id="rf">refresh now</button>
+  </header>
+
+  <div id="alerts"></div>
+
+  <div class="tiles">
+    <div class="tile panel"><div class="k">workflows</div><div class="v" id="t1">—</div><div class="s" id="t1s">&nbsp;</div></div>
+    <div class="tile panel"><div class="k">active</div><div class="v" id="t2">—</div><div class="s" id="t2s">&nbsp;</div></div>
+    <div class="tile panel"><div class="k">runs · 24h</div><div class="v" id="t3">—</div><div class="s" id="t3s">&nbsp;</div></div>
+    <div class="tile panel"><div class="k">success rate</div><div class="v" id="t4">—</div><div class="s" id="t4s">&nbsp;</div></div>
+  </div>
+
+  <div class="cols">
+    <section class="sec panel">
+      <div class="sech"><h2>Workflows</h2><div class="sp"></div><div class="n" id="wfn"></div></div>
+      <div class="wf" id="wf"><div class="empty">loading…</div></div>
+    </section>
+
+    <section class="sec panel">
+      <div class="sech"><h2>Execution history</h2><div class="sp"></div><div class="n" id="exn"></div></div>
+      <div class="ex" id="ex"><div class="empty">loading…</div></div>
+    </section>
+  </div>
+</div>
+
+<div class="panel" id="chat">
+  <div class="chead" id="chead">
+    <span class="dot on"></span>
+    <h2>Ask</h2>
+    <span class="tg" id="tg">–</span>
+  </div>
+  <div class="cbody">
+    <div class="msgs" id="msgs"></div>
+    <div class="sug" id="sug"></div>
+    <div class="cin">
+      <input id="q" placeholder="ask about your workflows…" autocomplete="off" />
+      <button id="send">send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const API = '/api/n8n';
+const REFRESH = 30;
+
+let WF = [], EX = [], failed = null, countdown = REFRESH, timer = null;
+
+/* ══════════ helpers ══════════ */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function ago(iso){
+  if(!iso) return '—';
+  const s = (Date.now() - new Date(iso).getTime())/1000;
+  if(isNaN(s)) return '—';
+  if(s < 60)    return Math.max(0,Math.floor(s))+'s';
+  if(s < 3600)  return Math.floor(s/60)+'m';
+  if(s < 86400) return Math.floor(s/3600)+'h';
+  if(s < 604800)return Math.floor(s/86400)+'d';
+  return Math.floor(s/604800)+'w';
+}
+function dur(a,b){
+  if(!a||!b) return '—';
+  const ms = new Date(b) - new Date(a);
+  if(isNaN(ms)||ms<0) return '—';
+  return ms < 1000 ? ms+'ms' : (ms/1000).toFixed(1)+'s';
+}
+const isFail = st => ['error','crashed','failed'].includes(String(st).toLowerCase());
+const isRun  = st => ['running','new','waiting'].includes(String(st).toLowerCase());
+const wfName = id => (WF.find(w => String(w.id) === String(id))||{}).name || ('workflow '+id);
+const runsOf = id => EX.filter(e => String(e.workflowId) === String(id));
+
+/* ══════════ fetch ══════════ */
+async function grab(resource, limit){
+  const r = await fetch(`${API}?resource=${resource}&limit=${limit}`, {cache:'no-store'});
+  let j = null;
+  try { j = await r.json(); } catch { /* non-JSON body */ }
+  if(!r.ok){
+    const e = new Error((j && (j.message || j.hint || j.error)) || `HTTP ${r.status}`);
+    e.payload = j || {}; e.status = r.status;
+    throw e;
+  }
+  return (j && j.data) || [];
+}
+
+async function load(){
+  $('rf').disabled = true;
+  $('hdot').className = 'dot run';
+  $('hst').textContent = 'SYNCING';
+  try{
+    const [w, e] = await Promise.all([ grab('workflows',100), grab('executions',100) ]);
+    WF = w; EX = e; failed = null;
+  }catch(err){
+    failed = err;
+  }
+  render();
+  countdown = REFRESH;
+  $('rf').disabled = false;
+}
+
+/* ══════════ render ══════════ */
+function render(){
+  renderAlert();
+  if(failed){
+    $('hdot').className = 'dot err';
+    $('hst').textContent = 'ERROR';
+    $('wf').innerHTML = '<div class="empty">no data</div>';
+    $('ex').innerHTML = '<div class="empty">no data</div>';
+    ['t1','t2','t3','t4'].forEach(i => $(i).textContent = '—');
+    return;
+  }
+  $('hdot').className = 'dot on';
+  $('hst').textContent = 'LIVE';
+  renderTiles(); renderWF(); renderEX();
+}
+
+function renderAlert(){
+  const box = $('alerts');
+  if(!failed){ box.innerHTML = ''; return; }
+  const p = failed.payload || {};
+  if(p.error === 'missing_key'){
+    box.innerHTML = `<div class="alert setup">
+      <h3>Setup needed — API key not configured</h3>
+      <p>The proxy is deployed and working, but it has no n8n key to authenticate with. Two things left:</p>
+      <ol>
+        <li>In n8n: <b>Settings → n8n API → Create an API key</b>. Copy it.</li>
+        <li>In Vercel: <b>your project → Settings → Environment Variables</b>.
+            Add <code>N8N_API_KEY</code> with that value, save, then
+            <b>Deployments → ⋯ → Redeploy</b>.</li>
+      </ol>
+      <p style="margin-top:12px">This page will work the moment the redeploy finishes.</p></div>`;
+    return;
+  }
+  box.innerHTML = `<div class="alert">
+    <h3>Could not reach n8n${failed.status ? ' — '+failed.status : ''}</h3>
+    <p>${esc(failed.message)}</p>
+    ${p.hint ? `<p>${esc(p.hint)}</p>` : ''}
+    ${p.detail ? `<p><code>${esc(String(p.detail).slice(0,220))}</code></p>` : ''}</div>`;
+}
+
+function renderTiles(){
+  const act = WF.filter(w => w.active).length;
+  const day = EX.filter(e => Date.now() - new Date(e.startedAt) < 864e5);
+  const done = EX.filter(e => !isRun(e.status));
+  const ok = done.filter(e => !isFail(e.status)).length;
+  const rate = done.length ? Math.round(ok/done.length*100) : null;
+  const never = WF.filter(w => runsOf(w.id).length === 0).length;
+
+  $('t1').textContent = WF.length;
+  $('t1').className = 'v';
+  $('t1s').textContent = never ? `${never} never run` : 'all have run';
+
+  $('t2').textContent = act;
+  $('t2').className = 'v ' + (act ? 'lime' : 'dim');
+  $('t2s').textContent = act ? `${WF.length-act} switched off` : 'nothing is scheduled';
+
+  $('t3').textContent = day.length;
+  $('t3').className = 'v ' + (day.length ? 'cyan' : 'dim');
+  const fails24 = day.filter(e => isFail(e.status)).length;
+  $('t3s').textContent = fails24 ? `${fails24} failed` : (day.length ? 'all clean' : 'no activity');
+
+  $('t4').textContent = rate === null ? '—' : rate + '%';
+  $('t4').className = 'v ' + (rate === null ? 'dim' : rate >= 95 ? 'lime' : rate >= 80 ? 'amber' : 'red');
+  $('t4s').textContent = done.length ? `${ok}/${done.length} runs` : 'no completed runs';
+}
+
+function renderWF(){
+  const el = $('wf');
+  if(!WF.length){ el.innerHTML = '<div class="empty">no workflows on this instance</div>'; return; }
+  $('wfn').textContent = WF.length + ' total';
+
+  const sorted = [...WF].sort((a,b) =>
+    (b.active?1:0)-(a.active?1:0) ||
+    new Date(b.updatedAt||0) - new Date(a.updatedAt||0));
+
+  el.innerHTML = sorted.map(w => {
+    const runs = runsOf(w.id).sort((a,b) => new Date(b.startedAt)-new Date(a.startedAt));
+    const last = runs[0];
+    const nodes = Array.isArray(w.nodes) ? w.nodes.length : null;
+    let lastHtml;
+    if(!last) lastHtml = '<span class="none">never run</span>';
+    else if(isFail(last.status)) lastHtml = `<b class="bad">failed</b> ${ago(last.startedAt)} ago`;
+    else if(isRun(last.status))  lastHtml = `<b>running</b>`;
+    else lastHtml = `<b class="ok">ok</b> ${ago(last.startedAt)} ago`;
+
+    const fails = runs.filter(r => isFail(r.status)).length;
+
+    return `<div class="card${w.active?' live':''}">
+      <div class="cr1">
+        <span class="dot${w.active?' on':''}"></span>
+        <span class="nm">${esc(w.name)}</span>
+        <span class="pill ${w.active?'on':'off'}">${w.active?'active':'inactive'}</span>
+      </div>
+      <div class="cr2">
+        <span>${nodes!==null?`<b>${nodes}</b> nodes`:'nodes —'}</span>
+        <span><b>${runs.length}</b> runs</span>
+        ${fails?`<span class="bad"><b class="bad">${fails}</b> failed</span>`:''}
+        <span>last: ${lastHtml}</span>
+      </div>
+      ${w.description?`<div class="desc">${esc(w.description)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderEX(){
+  const el = $('ex');
+  if(!EX.length){ el.innerHTML = '<div class="empty">no executions recorded yet<br><span class="mono-sm">workflows must run at least once</span></div>'; return; }
+  const sorted = [...EX].sort((a,b) => new Date(b.startedAt)-new Date(a.startedAt));
+  $('exn').textContent = sorted.length + ' runs';
+  el.innerHTML = sorted.map(e => {
+    const bad = isFail(e.status), run = isRun(e.status);
+    return `<div class="er${bad?' f':''}">
+      <span class="dot ${bad?'err':run?'run':'on'}" style="${run||bad?'':'animation:none'}"></span>
+      <span class="wn">${esc(wfName(e.workflowId))}</span>
+      <span class="du">${e.mode==='manual'?'manual · ':''}${dur(e.startedAt,e.stoppedAt)}</span>
+      <span class="tm">${ago(e.startedAt)}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════ local query engine ══════════
+   Answers from the data already on the page. No AI call, no key, no cost.
+   ═══════════════════════════════════════ */
+const SUGGEST = ['what is failing?','what is switched off?','what ran today?','which never ran?','summary'];
+
+function answer(qRaw){
+  const q = qRaw.toLowerCase().trim();
+  if(failed) return `I can't reach n8n right now — <b>${esc(String(failed.message).replace(/\.$/,''))}</b>. Fix that first, then ask again.`;
+  if(!WF.length) return `No workflows loaded yet.`;
+
+  const has = (...w) => w.some(x => q.includes(x));
+  const list = rows => rows.map(r => `<div class="li"><i>▸</i><span>${r}</span></div>`).join('');
+
+  // named workflow lookup
+  const named = WF.find(w => w.name && q.includes(w.name.toLowerCase().split('(')[0].trim().toLowerCase()));
+  if(named && !has('all','every','summary')){
+    const runs = runsOf(named.id).sort((a,b)=>new Date(b.startedAt)-new Date(a.startedAt));
+    const f = runs.filter(r=>isFail(r.status)).length;
+    return `<b>${esc(named.name)}</b> is <b>${named.active?'active':'inactive'}</b>.` + list([
+      `${Array.isArray(named.nodes)?named.nodes.length:'?'} nodes`,
+      `${runs.length} run${runs.length===1?'':'s'}${f?`, ${f} failed`:''}`,
+      runs[0] ? `last run ${ago(runs[0].startedAt)} ago — ${isFail(runs[0].status)?'failed':'ok'}` : 'never run',
+      named.active ? 'it is scheduled and will run on its own' : 'it will not run until you activate it'
+    ]);
+  }
+
+  if(has('fail','error','broken','red','wrong')){
+    const f = EX.filter(e=>isFail(e.status));
+    if(!f.length) return `Nothing has failed. <b>${EX.length}</b> recorded run${EX.length===1?'':'s'}, all clean.`;
+    return `<b>${f.length}</b> failed run${f.length===1?'':'s'}:` +
+      list(f.slice(0,8).map(e=>`${esc(wfName(e.workflowId))} — ${ago(e.startedAt)} ago`));
+  }
+
+  if(has('off','inactive','disabled','not active','switched')){
+    const off = WF.filter(w=>!w.active);
+    if(!off.length) return `Everything is active.`;
+    return `<b>${off.length}</b> of ${WF.length} workflow${WF.length===1?'':'s'} are switched off, so they never run on their own:` +
+      list(off.map(w=>esc(w.name)));
+  }
+
+  if(has('active','turned on','running','live','scheduled')){
+    const on = WF.filter(w=>w.active);
+    if(!on.length) return `<b>Nothing is active.</b> All ${WF.length} workflows are switched off — none of them will run on a schedule.`;
+    return `<b>${on.length}</b> active:` + list(on.map(w=>esc(w.name)));
+  }
+
+  if(has('never','unused','not run','zero run')){
+    const n = WF.filter(w=>runsOf(w.id).length===0);
+    if(!n.length) return `Every workflow has run at least once.`;
+    return `<b>${n.length}</b> never executed:` + list(n.map(w=>esc(w.name)));
+  }
+
+  if(has('today','24','recent','latest','last','when')){
+    const d = EX.filter(e=>Date.now()-new Date(e.startedAt)<864e5)
+                .sort((a,b)=>new Date(b.startedAt)-new Date(a.startedAt));
+    if(!d.length) return `Nothing has run in the last 24 hours.`;
+    return `<b>${d.length}</b> run${d.length===1?'':'s'} in 24h:` +
+      list(d.slice(0,8).map(e=>`${esc(wfName(e.workflowId))} — ${ago(e.startedAt)} ago, ${isFail(e.status)?'failed':'ok'}`));
+  }
+
+  if(has('slow','duration','long','fast','time')){
+    const t = EX.filter(e=>e.stoppedAt).map(e=>({e,ms:new Date(e.stoppedAt)-new Date(e.startedAt)}))
+                .sort((a,b)=>b.ms-a.ms);
+    if(!t.length) return `No completed runs to time.`;
+    return `Slowest runs:` + list(t.slice(0,5).map(x=>`${esc(wfName(x.e.workflowId))} — ${(x.ms/1000).toFixed(1)}s`));
+  }
+
+  if(has('node','big','complex','size')){
+    const s = [...WF].filter(w=>Array.isArray(w.nodes))
+      .sort((a,b)=>b.nodes.length-a.nodes.length);
+    if(!s.length) return `Node counts aren't in this response.`;
+    return `By node count:` + list(s.map(w=>`${esc(w.name)} — <b>${w.nodes.length}</b>`));
+  }
+
+  if(has('help','what can','how do')){
+    return `I read the data on this page and answer from it. Try:` +
+      list(['what is failing','what is switched off','what ran today','which never ran','slowest runs','node counts','or name any workflow']);
+  }
+
+  // default summary
+  const act = WF.filter(w=>w.active).length;
+  const f = EX.filter(e=>isFail(e.status)).length;
+  const never = WF.filter(w=>runsOf(w.id).length===0).length;
+  return `<b>${WF.length}</b> workflows, <b>${act}</b> active.` + list([
+    `${EX.length} recorded run${EX.length===1?'':'s'}${f?`, ${f} failed`:', none failed'}`,
+    `${never} workflow${never===1?'':'s'} never run`,
+    act===0 ? '<b>nothing is scheduled</b> — no workflow will run on its own' : `${act} will run on schedule`
+  ]);
+}
+
+/* ══════════ chat ui ══════════ */
+function push(text, who){
+  const d = document.createElement('div');
+  d.className = 'm ' + who;
+  d.innerHTML = text;
+  $('msgs').appendChild(d);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+}
+function ask(v){
+  const t = (v ?? $('q').value).trim();
+  if(!t) return;
+  push(esc(t), 'u');
+  $('q').value = '';
+  setTimeout(() => push(answer(t), 'a'), 90);
+}
+$('send').onclick = () => ask();
+$('q').addEventListener('keydown', e => { if(e.key === 'Enter') ask(); });
+$('chead').onclick = () => {
+  const c = $('chat'); c.classList.toggle('min');
+  $('tg').textContent = c.classList.contains('min') ? '+' : '–';
+};
+$('sug').innerHTML = SUGGEST.map(s => `<button data-q="${esc(s)}">${esc(s)}</button>`).join('');
+$('sug').onclick = e => { const b = e.target.closest('button'); if(b) ask(b.dataset.q); };
+
+/* ══════════ boot ══════════ */
+$('rf').onclick = () => load();
+
+function tickDown(){
+  if(document.hidden) return;
+  countdown--;
+  $('cd').textContent = countdown > 0 ? countdown + 's' : 'now';
+  if(countdown <= 0) load();
+}
+timer = setInterval(tickDown, 1000);
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden){ countdown = 3; }   // catch up shortly after refocus
+});
+
+load().then(() => {
+  push(answer('summary'), 'a');
+});
+})();
+</script>
+</body>
+</html>

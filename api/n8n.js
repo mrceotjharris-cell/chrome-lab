@@ -1,0 +1,88 @@
+/**
+ * Vercel serverless proxy for the n8n Public API.
+ *
+ * WHY THIS FILE EXISTS — two reasons, both non-negotiable:
+ *
+ * 1. CORS. n8n Cloud does not send Access-Control-Allow-Origin headers, so a
+ *    browser on chrome-lab.vercel.app is blocked from calling it directly.
+ *    This runs server-side, where CORS does not apply.
+ *
+ * 2. The API key. Anything shipped to the browser is public — "hidden" JS
+ *    variables are readable in devtools in about four clicks. The key lives
+ *    here, in a Vercel environment variable, and never leaves the server.
+ *
+ * The browser calls  /api/n8n?resource=workflows
+ * This calls         https://<instance>/api/v1/workflows   with the key attached.
+ */
+
+const ALLOWED = new Set(['workflows', 'executions']);
+const DEFAULT_BASE = 'https://goldentune.app.n8n.cloud';
+
+module.exports = async (req, res) => {
+  const key  = process.env.N8N_API_KEY;
+  const base = (process.env.N8N_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '');
+
+  if (!key) {
+    return res.status(500).json({
+      error: 'missing_key',
+      message: 'N8N_API_KEY is not set on this deployment.',
+      fix: 'Vercel → your project → Settings → Environment Variables → add N8N_API_KEY, then redeploy.'
+    });
+  }
+
+  // Whitelist the resource. Never interpolate user input straight into the
+  // upstream path — that turns this proxy into an open redirect / SSRF hole.
+  const resource = String(req.query.resource || 'workflows');
+  if (!ALLOWED.has(resource)) {
+    return res.status(400).json({ error: 'bad_resource', allowed: [...ALLOWED] });
+  }
+
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 250);
+
+  let url;
+  try {
+    url = new URL(`${base}/api/v1/${resource}`);
+  } catch {
+    return res.status(500).json({ error: 'bad_base_url', base });
+  }
+  url.searchParams.set('limit', String(limit));
+  // Execution payloads carry the full run data — megabytes each. We only need metadata.
+  if (resource === 'executions') url.searchParams.set('includeData', 'false');
+
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 12000);
+
+  try {
+    const upstream = await fetch(url, {
+      headers: { 'X-N8N-API-KEY': key, accept: 'application/json' },
+      signal: ctl.signal
+    });
+
+    const body = await upstream.text();
+
+    if (!upstream.ok) {
+      const hint =
+        upstream.status === 401 ? 'The API key was rejected. Generate a fresh one in n8n → Settings → n8n API.' :
+        upstream.status === 404 ? 'Endpoint not found — check N8N_BASE_URL points at your instance root.' :
+        undefined;
+      return res.status(upstream.status).json({
+        error: 'upstream_error', status: upstream.status,
+        detail: body.slice(0, 400), hint
+      });
+    }
+
+    // Cached at the edge for 10s so a browser left open on a 30s refresh
+    // doesn't hammer the n8n API.
+    res.setHeader('cache-control', 's-maxage=10, stale-while-revalidate=30');
+    return res.status(200).json(JSON.parse(body));
+
+  } catch (e) {
+    const aborted = e && e.name === 'AbortError';
+    return res.status(aborted ? 504 : 502).json({
+      error: aborted ? 'upstream_timeout' : 'proxy_failed',
+      detail: String(e && e.message || e).slice(0, 300)
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+};
