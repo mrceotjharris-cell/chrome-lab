@@ -1,3 +1,6 @@
 # Machine-local Claude Code state: permission allowlists, per-machine overrides.
 # The skills under .claude/skills/ ARE shared — only this file is personal.
 .claude/settings.local.json
+
+# npm
+node_modules/

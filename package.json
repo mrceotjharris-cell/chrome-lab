@@ -1,0 +1,9 @@
+{
+  "name": "chrome-lab",
+  "private": true,
+  "description": "goldentune.ai — the Iyelle hero, the ops dashboard, and its serverless API",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0"
+  }
+}
