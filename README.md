@@ -27,11 +27,15 @@ person reads it, it is a traffic engine. Don't let the two leak into each other.
 index.html                      the hero (495 KB, Three.js bundled inline)
 dashboard.html                  the n8n ops view (37 KB, no dependencies)
 api/n8n.js                      Vercel serverless proxy for the n8n Public API
+api/ask.js                      Iyelle's answers — live n8n data + the question, sent to Claude
+api/login.js                    trades the password for a session cookie (DELETE logs out)
+api/_auth.js, api/_n8n.js       shared helpers; "_" files are not routes on Vercel
 assets/goldentune-wordmark.png  the logo lettering (19 KB, transparent)
 ```
 
-The hero is fully static. The dashboard is static too, but calls `/api/n8n`,
-which is the only server-side code in the repo.
+The hero is fully static. The dashboard is static too, but its data comes from
+`/api/*`, the only server-side code in the repo. Every API route answers only a
+logged-in session, so the page is public but shows nothing until you log in.
 
 ## Brand
 
@@ -141,11 +145,19 @@ detected block carries one concrete next action. That panel is the product promi
 miniature, and the hero copy points straight at it: Iyelle names the one that isn't
 running.
 
-The Ask panel answers from the data already on the page — no model call, no key, no
-cost. It is Iyelle's voice, not a second system.
+The Ask panel sends each question to `/api/ask`, which reads the live n8n data
+itself and asks Claude (`claude-opus-5-5`, low effort; override with `IYELLE_MODEL`).
+Without `ANTHROPIC_API_KEY` — or if the model can't be reached — it falls back to the
+built-in rule-based answers, which also write the free opening summary. It is Iyelle's
+voice either way, not a second system.
 
-It needs `N8N_API_KEY` set in the Vercel project. Without it the page renders a setup
-alert explaining exactly which two steps are missing, rather than an error.
+### Login
+
+One password, `IYELLE_PASSWORD`. Logging in sets a signed, HttpOnly session cookie for
+30 days. The signing key is derived from the password, so changing the password logs
+every session out. With no password set, the API refuses everyone and the page shows a
+setup alert. Responses are `cache-control: private` — a shared edge cache does not key
+on the cookie and would hand one person's data to the next.
 
 ## Performance
 
@@ -154,7 +166,7 @@ alert explaining exactly which two steps are missing, rather than an error.
 | Hero page weight | 495 KB total, single request |
 | Triangles | 14,580 desktop / 4,500 mobile |
 | Network calls after load | none on the hero |
-| API cost | $0.00 |
+| API cost | $0.00 on the hero; Ask is billed per question by Anthropic |
 
 Built-in guards:
 
@@ -167,9 +179,17 @@ Built-in guards:
 
 ## Deploying
 
-Static site plus one serverless function. On Vercel: import the repo, leave every
-setting at its default, then add `N8N_API_KEY` under Settings → Environment Variables
-and redeploy. The hero works without it; only the dashboard needs it.
+Static site plus serverless functions. On Vercel: import the repo, leave every setting
+at its default, then add these under Settings → Environment Variables and redeploy:
+
+| variable | what it does |
+|---|---|
+| `IYELLE_PASSWORD` | the dashboard login — required, or the dashboard stays locked |
+| `N8N_API_KEY` | reads your traffic engines from n8n |
+| `ANTHROPIC_API_KEY` | lets Iyelle answer with a model; without it, Ask uses built-in answers |
+| `IYELLE_MODEL` | optional, overrides `claude-opus-5-5` |
+
+The hero works without any of them. Set a monthly spend limit on the Anthropic account.
 
 ## Built with
 
